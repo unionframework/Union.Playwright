@@ -17,7 +17,25 @@ public class Tests : PageTest
     [Test]
     public async Task HomepageHasPlaywrightInTitleAndGetStartedLinkLinkingtoTheIntroPage()
     {
-        //await myservice.GoToMyPage()
+        //await myservice.GotoMyPage()
+        //myservice.State.PageAs<MyPage>()
+        //TestSessionProvider.Instance.GetService<MyService>(this);
+        //TestSessionProvider.Instance.GetTestSession(this);
+
+        //myservice.Go.ToPage<AnotherServicePage>()
+        //myservice.Context
+        //myservice.State.ActualizePage()
+        //myservice.State.ActualizePopup(0)
+        //myservice.State.Page
+        //myservice.State.PageAs<FirstPage>()
+        //myservice.State.Popups[0]
+        //myservice.State.PopupAs<SecondPage>(0)
+        //myservice.State.Page.ClickAndWaitForRedirectAsync<MyFirstPage>()
+        //myservice.State.Page.ClickAndWaitForModalAsync<MyModal>()
+        //myservice.State.Page.ClickAndWaitForPopupAsync<MySecondPage>()
+        //myservice.State.Page.WaitLoadedAsync()
+        //myservice.State.Page.WaitWhileLoadingAsync()
+        //myservice.State.Page.WaitForModalAsync<MyModal>()
 
         await Page.GotoAsync("https://playwright.dev");
 
