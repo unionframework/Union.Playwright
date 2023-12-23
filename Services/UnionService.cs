@@ -13,7 +13,7 @@ namespace Union.Playwright.Services
         public IServiceContextsPool ServiceContextsPool => _serviceContextsPool;
 
         private IBrowserState _state;
-        public IBrowserState State => _state??(_state=new BrowserState());
+        public IBrowserState State => _state??(_state=new BrowserState(this));
 
         private IBrowserGo _go;
         public IBrowserGo Go => _go??(_go=new BrowserGo(this, State, _serviceContextsPool));

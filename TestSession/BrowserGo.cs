@@ -56,26 +56,26 @@ namespace Union.Playwright.TestSession
         {
             var page = await GetPageAsync();
             await page.GotoAsync(requestData.Url.ToString());
-            AfterNavigate();
+            AfterNavigate(page);
         }
 
         public async Task Refresh()
         {
             var page = await GetPageAsync();
             await page.ReloadAsync();
-            AfterNavigate();
+            AfterNavigate(page);
         }
 
         public async Task Back()
         {
             var page = await GetPageAsync();
             await page.GoBackAsync();
-            AfterNavigate();
+            AfterNavigate(page);
         }
 
-        private void AfterNavigate()
+        private void AfterNavigate(IPage page)
         {
-            _state.Actualize();
+            _state.Actualize(page);
             if (_state.PageIs<IUnionPage>())
             {
                 _state.PageAs<IUnionPage>().WaitLoaded();
