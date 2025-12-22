@@ -10,9 +10,6 @@ namespace PlaywrightTests;
 [TestFixture]
 public class Tests : PageTest
 {
-    Tests()
-    {
-    }
 
     [Test]
     public async Task HomepageHasPlaywrightInTitleAndGetStartedLinkLinkingtoTheIntroPage()
