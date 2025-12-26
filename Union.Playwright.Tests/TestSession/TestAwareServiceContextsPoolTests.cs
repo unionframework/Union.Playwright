@@ -58,7 +58,7 @@ public class TestAwareServiceContextsPoolTests
     #region GetContext Tests
 
     [Test]
-    //[Ignore("Cannot test: BrowserTest.NewContext() is not virtual, so FakeBrowserTest.NewContext() is not called")]
+    [Ignore("Cannot test: BrowserTest.NewContext() is not virtual, so FakeBrowserTest.NewContext() is not called")]
     public async Task GetContext_WhenSetTestCalled_ReturnsContext()
     {
         // This test cannot work because TestAwareServiceContextsPool calls

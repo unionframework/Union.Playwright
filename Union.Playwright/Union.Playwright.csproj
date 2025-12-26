@@ -11,13 +11,10 @@
   <ItemGroup>
     <Compile Remove="Components\**" />
     <Compile Remove="Exceptions\**" />
-    <Compile Remove="Union.Playwright.Tests\**" />
     <EmbeddedResource Remove="Components\**" />
     <EmbeddedResource Remove="Exceptions\**" />
-    <EmbeddedResource Remove="Union.Playwright.Tests\**" />
     <None Remove="Components\**" />
     <None Remove="Exceptions\**" />
-    <None Remove="Union.Playwright.Tests\**" />
   </ItemGroup>
 
   <ItemGroup>

@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Union.Playwright.csproj" />
+    <ProjectReference Include="..\Union.Playwright\Union.Playwright.csproj" />
   </ItemGroup>
 
 </Project>

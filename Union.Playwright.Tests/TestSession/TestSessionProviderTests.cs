@@ -6,7 +6,7 @@ using Union.Playwright.Core;
 using Union.Playwright.TestSession;
 using Union.Playwright.Tests.Fakes;
 
-namespace Union.Playwright.Tests;
+namespace Union.Playwright.Tests.TestSession;
 
 [TestFixture]
 public class TestSessionProviderTests

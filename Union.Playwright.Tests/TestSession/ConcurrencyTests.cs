@@ -5,20 +5,13 @@ using NSubstitute;
 using NUnit.Framework;
 using Union.Playwright.Core;
 using Union.Playwright.Services;
-using Union.Playwright.TestSession;
 using Union.Playwright.Tests.Fakes;
 
-namespace Union.Playwright.Tests;
+namespace Union.Playwright.Tests.TestSession;
 
 /// <summary>
 /// Tests that verify thread-safety behavior during parallel test execution.
-///
-/// IMPORTANT: These tests expose known thread-safety issues in the current implementation.
-/// The TestSessionProvider and TestAwareServiceContextsPool classes use non-thread-safe
-/// Dictionary collections, leading to race conditions when accessed concurrently.
-///
 /// Expected behavior:
-/// - Some tests may fail intermittently due to race conditions
 /// - Tests use [Repeat(10)] to increase the chance of detecting race conditions
 /// - Barrier class is used to synchronize threads and maximize concurrency
 /// </summary>
