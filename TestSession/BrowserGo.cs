@@ -31,6 +31,7 @@ namespace Union.Playwright.TestSession
             {
                 await context.NewPageAsync().ConfigureAwait(false);
             }
+            // TODO: get active page instead of first
             return context.Pages[0];
         }
 
