@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using Union.Playwright.Routing;
-using Union.Utils.Extensions;
+using Union.Playwright.Extensions;
 
 namespace Union.Playwright.Pages
 {

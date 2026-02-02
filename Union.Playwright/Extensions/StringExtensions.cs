@@ -1,4 +1,4 @@
-﻿namespace Union.Utils.Extensions
+﻿namespace Union.Playwright.Extensions
 {
     public static class StringExtensions
     {
