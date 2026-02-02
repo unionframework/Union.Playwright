@@ -1,13 +1,15 @@
-﻿using Microsoft.Playwright;
+using Microsoft.Playwright;
 using System.Collections.Generic;
+using Union.Playwright.Components;
 using Union.Playwright.Pages.Interfaces;
 using Union.Playwright.Routing;
+using Union.Playwright.SCSS;
 
 namespace Union.Playwright.Pages
 {
-    public abstract class UnionPage : IUnionPage
+    public abstract class UnionPage : IUnionPage, IContainer
     {
-        private IPage _page;
+        public IPage PlaywrightPage { get; private set; }
 
         public List<ILoader> ProgressBars { get; private set; }
 
@@ -29,6 +31,11 @@ namespace Union.Playwright.Pages
 
         public List<IOverlay> Overlays { get; private set; }
 
+        // IContainer implementation
+        public IUnionPage ParentPage => this;
+
+        public virtual string RootScss => null;
+
         protected UnionPage()
         {
             Params = new Dictionary<string, string>();
@@ -36,7 +43,7 @@ namespace Union.Playwright.Pages
 
         public void Activate(IPage page)
         {
-            _page = page;
+            this.PlaywrightPage = page;
             WebPageBuilder.InitPage(this);
         }
 
@@ -75,6 +82,17 @@ namespace Union.Playwright.Pages
                 new UriAssembler(BaseUrlInfo, AbsolutePath, Data, Params).Assemble(
                     defaultBaseUrlInfo);
             return new RequestData(url);
+        }
+
+        public string InnerScss(string relativeScss, params object[] args)
+        {
+            var formatted = string.Format(relativeScss, args);
+            if (this.RootScss == null)
+            {
+                return formatted;
+            }
+
+            return ScssBuilder.Concat(this.RootScss, formatted).Value;
         }
     }
 }

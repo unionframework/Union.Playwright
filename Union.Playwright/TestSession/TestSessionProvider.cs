@@ -87,13 +87,14 @@ namespace Union.Playwright.Core
 
     public class TestAwareServiceContextsPool : IServiceContextsPool
     {
-        private BrowserTest _browserTest;
+        private BrowserTest? _browserTest;
+        private Func<IPage>? _pageFactory;
         private readonly ConcurrentDictionary<IUnionService, IBrowserContext> _contexts;
         private readonly SemaphoreSlim _lock = new SemaphoreSlim(1, 1);
 
         public TestAwareServiceContextsPool()
         {
-            _contexts = new ConcurrentDictionary<IUnionService, IBrowserContext>();
+            this._contexts = new ConcurrentDictionary<IUnionService, IBrowserContext>();
         }
 
         /// <summary>
@@ -103,35 +104,63 @@ namespace Union.Playwright.Core
         public async Task<IBrowserContext> GetContext(IUnionService service)
         {
             // Fast path: check if context already exists
-            if (_contexts.TryGetValue(service, out var existingContext))
+            if (this._contexts.TryGetValue(service, out var existingContext))
             {
                 return existingContext;
             }
 
             // Slow path: acquire lock and create context if needed
-            await _lock.WaitAsync();
+            await this._lock.WaitAsync();
             try
             {
                 // Double-check after acquiring lock
-                if (_contexts.TryGetValue(service, out existingContext))
+                if (this._contexts.TryGetValue(service, out existingContext))
                 {
                     return existingContext;
                 }
 
-                var context = await _browserTest.NewContext();
-                _contexts[service] = context;
+                IBrowserContext context;
+                if (this._pageFactory != null)
+                {
+                    var page = this._pageFactory();
+                    context = page.Context;
+                }
+                else if (this._browserTest != null)
+                {
+                    context = await this._browserTest.NewContext();
+                }
+                else
+                {
+                    throw new InvalidOperationException(
+                        "Neither a page factory nor a BrowserTest has been configured. " +
+                        "Call SetPageFactory() or SetTest() before requesting a context.");
+                }
+
+                this._contexts[service] = context;
                 return context;
             }
             finally
             {
-                _lock.Release();
+                this._lock.Release();
             }
         }
 
-        // Managing the browser is responsibility of the BrowserTest
+        /// <summary>
+        /// Sets a factory function that provides the current IPage instance.
+        /// Used by UnionTest to integrate with PageTest's page lifecycle.
+        /// </summary>
+        public void SetPageFactory(Func<IPage> pageFactory)
+        {
+            this._pageFactory = pageFactory;
+        }
+
+        /// <summary>
+        /// Sets the BrowserTest instance for context creation.
+        /// Legacy method - prefer SetPageFactory for new code.
+        /// </summary>
         public void SetTest(BrowserTest browserTest)
         {
-            _browserTest = browserTest;
+            this._browserTest = browserTest;
         }
     }
 }

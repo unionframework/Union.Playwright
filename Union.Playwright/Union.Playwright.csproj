@@ -9,11 +9,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Components\**" />
     <Compile Remove="Exceptions\**" />
-    <EmbeddedResource Remove="Components\**" />
     <EmbeddedResource Remove="Exceptions\**" />
-    <None Remove="Components\**" />
     <None Remove="Exceptions\**" />
   </ItemGroup>
 

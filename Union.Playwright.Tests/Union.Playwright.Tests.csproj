@@ -20,4 +20,8 @@
     <ProjectReference Include="..\Union.Playwright\Union.Playwright.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="Integration\StackOverflow\questions.html" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

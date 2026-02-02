@@ -8,6 +8,8 @@ namespace Union.Playwright.Pages.Interfaces
     {
         string AbsolutePath { get; }
 
+        IPage PlaywrightPage { get; }
+
         List<Cookie> Cookies { get; set; }
 
         Dictionary<string, string> Data { get; set; }
@@ -22,16 +24,10 @@ namespace Union.Playwright.Pages.Interfaces
 
         List<IOverlay> Overlays { get; }
 
-        //void RegisterComponent(IComponent component);
-
-        //T RegisterComponent<T>(string componentName, params object[] args) where T : IComponent;
-
-        //T CreateComponent<T>(params object[] args) where T : IComponent;
-        //void Activate(Browser.Browser browser, IUnionLogger log, string windowHandle);
-
         void WaitLoaded();
 
         RequestData GetRequest(BaseUrlInfo defaultBaseUrlInfo);
-        public void Activate(IPage page);
+
+        void Activate(IPage page);
     }
 }
