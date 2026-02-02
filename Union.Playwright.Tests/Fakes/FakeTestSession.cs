@@ -1,7 +1,6 @@
 using Union.Playwright.Core;
 using Union.Playwright.Pages;
 using Union.Playwright.Services;
-using Union.Playwright.TestSession;
 
 namespace Union.Playwright.Tests.Fakes;
 
@@ -14,25 +13,19 @@ public class FakeServicePage : UnionPage
 }
 
 /// <summary>
-/// A working version of MyService that doesn't throw NotImplementedException.
-/// We extend MyService to override the BaseUrl property.
+/// A concrete ITestSession implementation for testing.
 /// </summary>
-public class WorkingMyService : MyService
+public class FakeTestSession : ITestSession
 {
-    public WorkingMyService(IServiceContextsPool serviceContextsPool) : base(serviceContextsPool)
+    private readonly IEnumerable<IUnionService> _services;
+
+    public FakeTestSession(IEnumerable<IUnionService> services)
     {
+        this._services = services;
     }
 
-    public override string BaseUrl => "https://test.example.com";
-}
-
-/// <summary>
-/// A concrete TestSession implementation for testing.
-/// Extends the abstract TestSession base class.
-/// </summary>
-public class FakeTestSession : Union.Playwright.TestSession.TestSession
-{
-    public FakeTestSession(MyService myService) : base(myService)
+    public List<IUnionService> GetServices()
     {
+        return this._services.ToList();
     }
 }

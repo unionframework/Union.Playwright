@@ -1,13 +1,12 @@
-﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Playwright;
-using Microsoft.Playwright.NUnit;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Union.Playwright.Services;
+using Union.Playwright.TestSession;
 
 namespace Union.Playwright.Core
 {
@@ -15,10 +14,9 @@ namespace Union.Playwright.Core
     {
 
     }
-    public abstract class TestSessionProvider<T> where T : TestSession.TestSession
+    public abstract class TestSessionProvider<T> where T : class, ITestSession
     {
-        private readonly ConcurrentDictionary<BrowserTest, ITestSession> TestSessions;
-        private readonly IHost TestApp;
+        private readonly IHost _testApp;
 
         protected TestSessionProvider()
         {
@@ -26,8 +24,8 @@ namespace Union.Playwright.Core
             builder.ConfigureServices((context, services) =>
             {
                 services.AddScoped<IWeb, Web>();
-                services.AddTransient<ITestSession, T>();
-                services.AddTransient<IServiceContextsPool, TestAwareServiceContextsPool>();
+                services.AddScoped<ITestSession, T>();
+                services.AddScoped<IServiceContextsPool, TestAwareServiceContextsPool>();
                 var settings = context.Configuration.GetSection("TestSettings").Get<TestSettings>();
                 if(settings != null)
                 {
@@ -35,42 +33,25 @@ namespace Union.Playwright.Core
                 }
                 ConfigureServices(services);
             });
-            TestApp = builder.Build();
-            TestSessions = new ConcurrentDictionary<BrowserTest, ITestSession>();
+            this._testApp = builder.Build();
         }
 
-        private ITestSession CreateTestSession(BrowserTest test)
+        public ScopedTestSession CreateTestSession(Func<IPage> pageFactory)
         {
-            var scope = TestApp.Services.CreateScope();
+            var scope = this._testApp.Services.CreateScope();
             var provider = scope.ServiceProvider;
-            var testSession = provider.GetService<ITestSession>();
-            var contextsPool = provider.GetService<IServiceContextsPool>();
-            var web = provider.GetService<IWeb>();
-            // TODO: verify for null
-            if (contextsPool is TestAwareServiceContextsPool)
+
+            var pool = provider.GetRequiredService<IServiceContextsPool>();
+            if (pool is TestAwareServiceContextsPool testPool)
             {
-                ((TestAwareServiceContextsPool)contextsPool).SetTest(test);
+                testPool.SetPageFactory(pageFactory);
             }
-            var services = testSession.GetServices();
-            services.ForEach(s => web.RegisterService(s));
-            return testSession;
-        }
 
-        public TService GetService<TService>(BrowserTest test) where TService : IUnionService
-        {
-            // TODO: use test session scope
-            var scope = TestApp.Services.CreateScope();
-            var provider = scope.ServiceProvider;
-            return provider.GetService<TService>();
-        }
+            var session = provider.GetRequiredService<ITestSession>();
+            var web = provider.GetRequiredService<IWeb>();
+            session.GetServices().ForEach(s => web.RegisterService(s));
 
-        /// <summary>
-        /// Gets or creates a test session for the given browser test.
-        /// Thread-safe: uses ConcurrentDictionary.GetOrAdd for atomic access.
-        /// </summary>
-        public ITestSession GetTestSession(BrowserTest test)
-        {
-            return TestSessions.GetOrAdd(test, CreateTestSession);
+            return new ScopedTestSession(session, scope);
         }
 
         /// <summary>
@@ -85,9 +66,8 @@ namespace Union.Playwright.Core
         Task<IBrowserContext> GetContext(IUnionService service);
     }
 
-    public class TestAwareServiceContextsPool : IServiceContextsPool
+    public class TestAwareServiceContextsPool : IServiceContextsPool, IDisposable
     {
-        private BrowserTest? _browserTest;
         private Func<IPage>? _pageFactory;
         private readonly ConcurrentDictionary<IUnionService, IBrowserContext> _contexts;
         private readonly SemaphoreSlim _lock = new SemaphoreSlim(1, 1);
@@ -119,22 +99,12 @@ namespace Union.Playwright.Core
                     return existingContext;
                 }
 
-                IBrowserContext context;
-                if (this._pageFactory != null)
-                {
-                    var page = this._pageFactory();
-                    context = page.Context;
-                }
-                else if (this._browserTest != null)
-                {
-                    context = await this._browserTest.NewContext();
-                }
-                else
-                {
-                    throw new InvalidOperationException(
-                        "Neither a page factory nor a BrowserTest has been configured. " +
-                        "Call SetPageFactory() or SetTest() before requesting a context.");
-                }
+                var factory = this._pageFactory
+                    ?? throw new InvalidOperationException(
+                        "No page factory has been configured. " +
+                        "Call SetPageFactory() before requesting a context.");
+                var page = factory();
+                var context = page.Context;
 
                 this._contexts[service] = context;
                 return context;
@@ -154,13 +124,10 @@ namespace Union.Playwright.Core
             this._pageFactory = pageFactory;
         }
 
-        /// <summary>
-        /// Sets the BrowserTest instance for context creation.
-        /// Legacy method - prefer SetPageFactory for new code.
-        /// </summary>
-        public void SetTest(BrowserTest browserTest)
+        public void Dispose()
         {
-            this._browserTest = browserTest;
+            this._contexts.Clear();
+            this._lock.Dispose();
         }
     }
 }

@@ -30,23 +30,63 @@ public class StubTestSession : ITestSession
 }
 
 /// <summary>
+/// A TestSessionProvider for StubTestSession.
+/// </summary>
+public class StubTestSessionProvider : TestSessionProvider<StubTestSession>
+{
+    private static Action<IServiceCollection>? _pendingConfigurator;
+
+    public StubTestSessionProvider() : this(null) { }
+
+    public StubTestSessionProvider(Action<IServiceCollection>? configurator)
+    {
+        // Note: configurator must be set via static field before base ctor runs ConfigureServices
+        _ = configurator; // already consumed via _pendingConfigurator
+    }
+
+    public static StubTestSessionProvider CreateWithServices(Action<IServiceCollection> configurator)
+    {
+        _pendingConfigurator = configurator;
+        var provider = new StubTestSessionProvider(configurator);
+        _pendingConfigurator = null;
+        return provider;
+    }
+
+    public override void ConfigureServices(IServiceCollection services)
+    {
+        if (_pendingConfigurator != null)
+        {
+            _pendingConfigurator.Invoke(services);
+        }
+        else
+        {
+            services.AddSingleton<IEnumerable<IUnionService>>(Array.Empty<IUnionService>());
+        }
+    }
+}
+
+/// <summary>
 /// A concrete UnionTest for testing purposes.
 /// Cannot run Playwright lifecycle (PageTest requires a real browser),
 /// so we test the DI/lifecycle methods directly.
 /// </summary>
 public class TestableUnionTest : UnionTest<StubTestSession>
 {
-    public Action<IServiceCollection>? OnConfigureServices { get; set; }
+    private readonly StubTestSessionProvider _provider;
+
+    public TestableUnionTest() : this(new StubTestSessionProvider()) { }
+
+    public TestableUnionTest(StubTestSessionProvider provider)
+    {
+        this._provider = provider;
+    }
 
     /// <summary>
     /// Expose the protected Session property for testing.
     /// </summary>
     public new StubTestSession Session => base.Session;
 
-    protected override void ConfigureServices(IServiceCollection services)
-    {
-        this.OnConfigureServices?.Invoke(services);
-    }
+    protected override TestSessionProvider<StubTestSession> GetSessionProvider() => this._provider;
 }
 
 #endregion
@@ -54,53 +94,6 @@ public class TestableUnionTest : UnionTest<StubTestSession>
 [TestFixture]
 public class UnionTestTests
 {
-    #region OneTimeSetUp / OneTimeTearDown Tests
-
-    [Test]
-    public void UnionOneTimeSetUp_BuildsHost_DoesNotThrow()
-    {
-        // Arrange
-        var sut = new TestableUnionTest();
-
-        // Act
-        var act = () => sut.UnionOneTimeSetUp();
-
-        // Assert
-        act.Should().NotThrow();
-
-        // Cleanup
-        sut.UnionOneTimeTearDown();
-    }
-
-    [Test]
-    public void UnionOneTimeTearDown_AfterSetUp_DoesNotThrow()
-    {
-        // Arrange
-        var sut = new TestableUnionTest();
-        sut.UnionOneTimeSetUp();
-
-        // Act
-        var act = () => sut.UnionOneTimeTearDown();
-
-        // Assert
-        act.Should().NotThrow();
-    }
-
-    [Test]
-    public void UnionOneTimeTearDown_WithoutSetUp_DoesNotThrow()
-    {
-        // Arrange
-        var sut = new TestableUnionTest();
-
-        // Act
-        var act = () => sut.UnionOneTimeTearDown();
-
-        // Assert
-        act.Should().NotThrow();
-    }
-
-    #endregion
-
     #region SetUp / TearDown Tests
 
     [Test]
@@ -108,7 +101,6 @@ public class UnionTestTests
     {
         // Arrange
         var sut = new TestableUnionTest();
-        sut.UnionOneTimeSetUp();
 
         // Act
         sut.UnionSetUp();
@@ -119,25 +111,6 @@ public class UnionTestTests
 
         // Cleanup
         sut.UnionTearDown();
-        sut.UnionOneTimeTearDown();
-    }
-
-    [Test]
-    public void UnionSetUp_ResolvesPoolAsTestAwareServiceContextsPool()
-    {
-        // Arrange
-        var sut = new TestableUnionTest();
-        sut.UnionOneTimeSetUp();
-
-        // Act
-        sut.UnionSetUp();
-
-        // Assert - pool was resolved (session creation succeeded means DI worked)
-        sut.Session.Should().NotBeNull();
-
-        // Cleanup
-        sut.UnionTearDown();
-        sut.UnionOneTimeTearDown();
     }
 
     [Test]
@@ -158,7 +131,6 @@ public class UnionTestTests
     {
         // Arrange
         var sut = new TestableUnionTest();
-        sut.UnionOneTimeSetUp();
 
         // Act
         sut.UnionSetUp();
@@ -171,28 +143,24 @@ public class UnionTestTests
 
         // Assert - each SetUp creates a new scope and session
         firstSession.Should().NotBeSameAs(secondSession);
-
-        // Cleanup
-        sut.UnionOneTimeTearDown();
     }
 
     #endregion
 
-    #region ConfigureServices Tests
+    #region GetSessionProvider Tests
 
     [Test]
-    public void ConfigureServices_CustomRegistrations_AreAvailable()
+    public void GetSessionProvider_CustomRegistrations_AreAvailable()
     {
         // Arrange
         var mockService = Substitute.For<IUnionService>();
-        var sut = new TestableUnionTest();
-        sut.OnConfigureServices = services =>
+        var provider = StubTestSessionProvider.CreateWithServices(services =>
         {
             services.AddSingleton<IEnumerable<IUnionService>>(new[] { mockService });
-        };
+        });
+        var sut = new TestableUnionTest(provider);
 
         // Act
-        sut.UnionOneTimeSetUp();
         sut.UnionSetUp();
 
         // Assert
@@ -201,21 +169,15 @@ public class UnionTestTests
 
         // Cleanup
         sut.UnionTearDown();
-        sut.UnionOneTimeTearDown();
     }
 
     [Test]
-    public void ConfigureServices_WithNoCustomServices_SessionHasEmptyServiceList()
+    public void GetSessionProvider_WithNoCustomServices_SessionHasEmptyServiceList()
     {
         // Arrange
         var sut = new TestableUnionTest();
-        sut.OnConfigureServices = services =>
-        {
-            services.AddSingleton<IEnumerable<IUnionService>>(Array.Empty<IUnionService>());
-        };
 
         // Act
-        sut.UnionOneTimeSetUp();
         sut.UnionSetUp();
 
         // Assert
@@ -223,7 +185,6 @@ public class UnionTestTests
 
         // Cleanup
         sut.UnionTearDown();
-        sut.UnionOneTimeTearDown();
     }
 
     #endregion
@@ -235,12 +196,11 @@ public class UnionTestTests
     {
         // Arrange
         var mockService = Substitute.For<IUnionService>();
-        var sut = new TestableUnionTest();
-        sut.OnConfigureServices = services =>
+        var provider = StubTestSessionProvider.CreateWithServices(services =>
         {
             services.AddSingleton<IEnumerable<IUnionService>>(new[] { mockService });
-        };
-        sut.UnionOneTimeSetUp();
+        });
+        var sut = new TestableUnionTest(provider);
         sut.UnionSetUp();
 
         // Act
@@ -251,7 +211,6 @@ public class UnionTestTests
 
         // Cleanup
         sut.UnionTearDown();
-        sut.UnionOneTimeTearDown();
     }
 
     [Test]
@@ -259,11 +218,6 @@ public class UnionTestTests
     {
         // Arrange
         var sut = new TestableUnionTest();
-        sut.OnConfigureServices = services =>
-        {
-            services.AddSingleton<IEnumerable<IUnionService>>(Array.Empty<IUnionService>());
-        };
-        sut.UnionOneTimeSetUp();
         sut.UnionSetUp();
 
         // Act
@@ -275,7 +229,6 @@ public class UnionTestTests
 
         // Cleanup
         sut.UnionTearDown();
-        sut.UnionOneTimeTearDown();
     }
 
     #endregion
@@ -314,7 +267,7 @@ public class UnionTestTests
 
         // Assert
         act.Should().ThrowAsync<InvalidOperationException>()
-            .WithMessage("*page factory*BrowserTest*");
+            .WithMessage("*page factory*");
     }
 
     #endregion

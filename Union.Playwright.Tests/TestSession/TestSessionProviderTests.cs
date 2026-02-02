@@ -12,73 +12,62 @@ namespace Union.Playwright.Tests.TestSession;
 public class TestSessionProviderTests
 {
     private TestableTestSessionProvider _provider = null!;
-    private IBrowserContext _fakeContext = null!;
+    private IPage _fakePage = null!;
 
     [SetUp]
     public void SetUp()
     {
-        _fakeContext = Substitute.For<IBrowserContext>();
+        var fakeContext = Substitute.For<IBrowserContext>();
+        _fakePage = Substitute.For<IPage>();
+        _fakePage.Context.Returns(fakeContext);
         _provider = new TestableTestSessionProvider();
     }
 
-    #region GetTestSession Tests
+    #region CreateTestSession Tests
 
     [Test]
-    public void GetTestSession_WhenCalledWithNewTest_CreatesNewSession()
+    public void CreateTestSession_ReturnsNonNullScopedSession()
     {
-        // Arrange
-        var browserTest = new FakeBrowserTest(_fakeContext);
-
         // Act
-        var session = _provider.GetTestSession(browserTest);
+        using var scoped = _provider.CreateTestSession(() => _fakePage);
 
         // Assert
-        session.Should().NotBeNull();
-        session.Should().BeOfType<FakeTestSession>();
+        scoped.Should().NotBeNull();
+        scoped.Session.Should().NotBeNull();
+        scoped.Session.Should().BeOfType<FakeTestSession>();
     }
 
     [Test]
-    public void GetTestSession_WhenCalledTwiceWithSameTest_ReturnsSameSession()
+    public void CreateTestSession_CalledTwice_ReturnsDifferentSessions()
     {
-        // Arrange
-        var browserTest = new FakeBrowserTest(_fakeContext);
-
         // Act
-        var session1 = _provider.GetTestSession(browserTest);
-        var session2 = _provider.GetTestSession(browserTest);
+        using var scoped1 = _provider.CreateTestSession(() => _fakePage);
+        using var scoped2 = _provider.CreateTestSession(() => _fakePage);
 
         // Assert
-        session1.Should().BeSameAs(session2, "the same test should always return the same session");
+        scoped1.Session.Should().NotBeSameAs(scoped2.Session);
     }
 
     [Test]
-    public void GetTestSession_WhenCalledWithDifferentTests_ReturnsDifferentSessions()
+    public void CreateTestSession_SessionContainsRegisteredServices()
     {
-        // Arrange
-        var browserTest1 = new FakeBrowserTest(_fakeContext);
-        var browserTest2 = new FakeBrowserTest(_fakeContext);
-
         // Act
-        var session1 = _provider.GetTestSession(browserTest1);
-        var session2 = _provider.GetTestSession(browserTest2);
-
-        // Assert
-        session1.Should().NotBeSameAs(session2, "different tests should get different sessions");
-    }
-
-    [Test]
-    public void GetTestSession_SessionContainsRegisteredServices()
-    {
-        // Arrange
-        var browserTest = new FakeBrowserTest(_fakeContext);
-
-        // Act
-        var session = _provider.GetTestSession(browserTest);
-        var services = session.GetServices();
+        using var scoped = _provider.CreateTestSession(() => _fakePage);
+        var services = scoped.Session.GetServices();
 
         // Assert
         services.Should().NotBeNull();
-        services.Should().HaveCountGreaterThan(0, "session should contain at least one service");
+    }
+
+    [Test]
+    public void CreateTestSession_DisposingScope_DoesNotThrow()
+    {
+        // Act
+        var scoped = _provider.CreateTestSession(() => _fakePage);
+
+        // Assert
+        var act = () => scoped.Dispose();
+        act.Should().NotThrow();
     }
 
     #endregion
@@ -86,33 +75,23 @@ public class TestSessionProviderTests
     #region Session Lifecycle Tests
 
     [Test]
-    public void GetTestSession_MultipleTests_EachGetsIsolatedSession()
+    public void CreateTestSession_MultipleCalls_EachGetsIsolatedSession()
     {
-        // Arrange
-        var tests = Enumerable.Range(0, 5)
-            .Select(_ => new FakeBrowserTest(_fakeContext))
+        // Act
+        var sessions = Enumerable.Range(0, 5)
+            .Select(_ => _provider.CreateTestSession(() => _fakePage))
             .ToList();
 
-        // Act
-        var sessions = tests.Select(t => _provider.GetTestSession(t)).ToList();
-
-        // Assert
-        sessions.Should().OnlyHaveUniqueItems("each test should have its own unique session");
-    }
-
-    [Test]
-    public void GetTestSession_SameTestMultipleTimes_AlwaysReturnsSameInstance()
-    {
-        // Arrange
-        var browserTest = new FakeBrowserTest(_fakeContext);
-
-        // Act
-        var sessions = Enumerable.Range(0, 10)
-            .Select(_ => _provider.GetTestSession(browserTest))
-            .ToList();
-
-        // Assert
-        sessions.Distinct().Should().HaveCount(1, "all calls with same test should return identical session");
+        try
+        {
+            // Assert
+            var sessionInstances = sessions.Select(s => s.Session).ToList();
+            sessionInstances.Should().OnlyHaveUniqueItems("each call should create a unique session");
+        }
+        finally
+        {
+            sessions.ForEach(s => s.Dispose());
+        }
     }
 
     #endregion

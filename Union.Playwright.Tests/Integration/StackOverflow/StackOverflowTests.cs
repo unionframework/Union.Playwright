@@ -1,5 +1,4 @@
 using FluentAssertions;
-using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using Union.Playwright.Core;
 using Union.Playwright.Pages;
@@ -10,10 +9,8 @@ namespace Union.Playwright.Tests.Integration.StackOverflow
     [TestFixture]
     public class StackOverflowTests : UnionTest<StackOverflowTestSession>
     {
-        protected override void ConfigureServices(IServiceCollection services)
-        {
-            services.AddTransient<StackOverflowService>();
-        }
+        protected override TestSessionProvider<StackOverflowTestSession> GetSessionProvider()
+            => StackOverflowTestSessionProvider.Instance;
 
         [SetUp]
         public async Task SetUpRoute()

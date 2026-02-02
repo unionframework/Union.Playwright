@@ -1,12 +1,11 @@
 using Microsoft.Extensions.DependencyInjection;
 using Union.Playwright.Core;
-using Union.Playwright.TestSession;
+using Union.Playwright.Services;
 
 namespace Union.Playwright.Tests.Fakes;
 
 /// <summary>
 /// A concrete TestSessionProvider for testing purposes.
-/// Registers WorkingMyService instead of the broken MyService.
 /// </summary>
 public class TestableTestSessionProvider : TestSessionProvider<FakeTestSession>
 {
@@ -14,8 +13,8 @@ public class TestableTestSessionProvider : TestSessionProvider<FakeTestSession>
 
     public override void ConfigureServices(IServiceCollection services)
     {
-        // Register WorkingMyService as MyService so DI works correctly
-        services.AddTransient<MyService, WorkingMyService>();
+        // Register an empty set of IUnionService by default
+        services.AddSingleton<IEnumerable<IUnionService>>(Array.Empty<IUnionService>());
 
         // Allow tests to add additional service registrations
         AdditionalServiceConfigurator?.Invoke(services);

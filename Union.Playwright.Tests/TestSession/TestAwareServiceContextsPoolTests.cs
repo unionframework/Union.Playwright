@@ -4,53 +4,44 @@ using NSubstitute;
 using NUnit.Framework;
 using Union.Playwright.Core;
 using Union.Playwright.Services;
-using Union.Playwright.Tests.Fakes;
 
 namespace Union.Playwright.Tests;
 
 /// <summary>
 /// Unit tests for TestAwareServiceContextsPool.
-///
-/// NOTE: Some tests that require intercepting BrowserTest.NewContext() are skipped
-/// because BrowserTest.NewContext() is not virtual, preventing proper mocking.
-/// The context caching behavior is instead verified through the ConcurrencyTests.
 /// </summary>
 [TestFixture]
 public class TestAwareServiceContextsPoolTests
 {
     private TestAwareServiceContextsPool _pool = null!;
+    private IPage _fakePage = null!;
     private IBrowserContext _fakeContext = null!;
-    private FakeBrowserTest _fakeBrowserTest = null!;
 
     [SetUp]
     public void SetUp()
     {
         _fakeContext = Substitute.For<IBrowserContext>();
-        _fakeBrowserTest = new FakeBrowserTest(_fakeContext);
+        _fakePage = Substitute.For<IPage>();
+        _fakePage.Context.Returns(_fakeContext);
         _pool = new TestAwareServiceContextsPool();
     }
 
-    #region SetTest Tests
+    [TearDown]
+    public void TearDown()
+    {
+        _pool.Dispose();
+    }
+
+    #region SetPageFactory Tests
 
     [Test]
-    public void SetTest_DoesNotThrow()
+    public void SetPageFactory_DoesNotThrow()
     {
         // Act
-        var act = () => _pool.SetTest(_fakeBrowserTest);
+        var act = () => _pool.SetPageFactory(() => _fakePage);
 
         // Assert
         act.Should().NotThrow();
-    }
-
-    [Test]
-    public void SetTest_CanBeCalledMultipleTimes()
-    {
-        // Arrange
-        var anotherBrowserTest = new FakeBrowserTest(_fakeContext);
-
-        // Act & Assert - no exception
-        _pool.SetTest(_fakeBrowserTest);
-        _pool.SetTest(anotherBrowserTest);
     }
 
     #endregion
@@ -58,15 +49,10 @@ public class TestAwareServiceContextsPoolTests
     #region GetContext Tests
 
     [Test]
-    [Ignore("Cannot test: BrowserTest.NewContext() is not virtual, so FakeBrowserTest.NewContext() is not called")]
-    public async Task GetContext_WhenSetTestCalled_ReturnsContext()
+    public async Task GetContext_WhenPageFactorySet_ReturnsContext()
     {
-        // This test cannot work because TestAwareServiceContextsPool calls
-        // _browserTest.NewContext() which calls the BASE class method
-        // (BrowserTest.NewContext), not our FakeBrowserTest.NewContext().
-
         // Arrange
-        _pool.SetTest(_fakeBrowserTest);
+        _pool.SetPageFactory(() => _fakePage);
         var service = Substitute.For<IUnionService>();
 
         // Act
@@ -78,11 +64,10 @@ public class TestAwareServiceContextsPoolTests
     }
 
     [Test]
-    [Ignore("Cannot test: BrowserTest.NewContext() is not virtual")]
     public async Task GetContext_WhenCalledTwiceWithSameService_ReturnsSameContext()
     {
         // Arrange
-        _pool.SetTest(_fakeBrowserTest);
+        _pool.SetPageFactory(() => _fakePage);
         var service = Substitute.For<IUnionService>();
 
         // Act
@@ -94,41 +79,17 @@ public class TestAwareServiceContextsPoolTests
     }
 
     [Test]
-    [Ignore("Cannot test: BrowserTest.NewContext() is not virtual")]
-    public async Task GetContext_WhenCalledWithDifferentServices_CreatesSeparateContexts()
-    {
-        // Arrange
-        var contextCount = 0;
-        var browserTestWithFactory = new FakeBrowserTest(() =>
-        {
-            contextCount++;
-            return Substitute.For<IBrowserContext>();
-        });
-        _pool.SetTest(browserTestWithFactory);
-
-        var service1 = Substitute.For<IUnionService>();
-        var service2 = Substitute.For<IUnionService>();
-
-        // Act
-        await _pool.GetContext(service1);
-        await _pool.GetContext(service2);
-
-        // Assert
-        contextCount.Should().Be(2, "each service should get its own context");
-    }
-
-    [Test]
-    public void GetContext_WhenSetTestNotCalled_ThrowsNullReferenceException()
+    public void GetContext_WhenNoPageFactorySet_ThrowsInvalidOperationException()
     {
         // Arrange
         var service = Substitute.For<IUnionService>();
-        // SetTest NOT called - _browserTest is null
 
         // Act
         Func<Task> act = async () => await _pool.GetContext(service);
 
         // Assert
-        act.Should().ThrowAsync<NullReferenceException>();
+        act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*page factory*");
     }
 
     #endregion
@@ -136,17 +97,17 @@ public class TestAwareServiceContextsPoolTests
     #region Context Caching Tests
 
     [Test]
-    [Ignore("Cannot test: BrowserTest.NewContext() is not virtual")]
     public async Task GetContext_CachesContextPerService()
     {
         // Arrange
         var callCount = 0;
-        var browserTestWithCounter = new FakeBrowserTest(() =>
+        var mockPage = Substitute.For<IPage>();
+        mockPage.Context.Returns(_ =>
         {
             callCount++;
-            return Substitute.For<IBrowserContext>();
+            return _fakeContext;
         });
-        _pool.SetTest(browserTestWithCounter);
+        _pool.SetPageFactory(() => mockPage);
         var service = Substitute.For<IUnionService>();
 
         // Act - call multiple times with same service
@@ -154,8 +115,22 @@ public class TestAwareServiceContextsPoolTests
         await _pool.GetContext(service);
         await _pool.GetContext(service);
 
-        // Assert
+        // Assert - factory called once (first GetContext), then cached
         callCount.Should().Be(1, "context should be cached after first call");
+    }
+
+    #endregion
+
+    #region Dispose Tests
+
+    [Test]
+    public void Dispose_DoesNotThrow()
+    {
+        // Act
+        var act = () => _pool.Dispose();
+
+        // Assert
+        act.Should().NotThrow();
     }
 
     #endregion
