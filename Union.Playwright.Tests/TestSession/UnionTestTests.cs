@@ -20,12 +20,12 @@ public class StubTestSession : ITestSession
 
     public StubTestSession(IEnumerable<IUnionService> services)
     {
-        this._services = services.ToList();
+        _services = services.ToList();
     }
 
     public List<IUnionService> GetServices()
     {
-        return this._services;
+        return _services;
     }
 }
 
@@ -78,7 +78,7 @@ public class TestableUnionTest : UnionTest<StubTestSession>
 
     public TestableUnionTest(StubTestSessionProvider provider)
     {
-        this._provider = provider;
+        _provider = provider;
     }
 
     /// <summary>
@@ -86,7 +86,7 @@ public class TestableUnionTest : UnionTest<StubTestSession>
     /// </summary>
     public new StubTestSession Session => base.Session;
 
-    protected override TestSessionProvider<StubTestSession> GetSessionProvider() => this._provider;
+    protected override TestSessionProvider<StubTestSession> GetSessionProvider() => _provider;
 }
 
 #endregion

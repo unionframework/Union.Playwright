@@ -16,15 +16,15 @@ namespace Union.Playwright.TestSession
         [SetUp]
         public void UnionSetUp()
         {
-            this._scopedSession = this.GetSessionProvider().CreateTestSession(() => this.Page);
-            this.Session = (TSession)this._scopedSession.Session;
+            _scopedSession = this.GetSessionProvider().CreateTestSession(() => this.Page);
+            this.Session = (TSession)_scopedSession.Session;
         }
 
         [TearDown]
         public void UnionTearDown()
         {
-            this._scopedSession?.Dispose();
-            this._scopedSession = null;
+            _scopedSession?.Dispose();
+            _scopedSession = null;
         }
 
         protected TService GetService<TService>() where TService : IUnionService

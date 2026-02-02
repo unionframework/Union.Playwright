@@ -23,12 +23,12 @@ namespace Union.Playwright.Components
         {
             get
             {
-                if (this._itemRootScss == null)
+                if (_itemRootScss == null)
                 {
-                    this._itemRootScss = this.ItemScss;
+                    _itemRootScss = this.ItemScss;
                 }
 
-                return this._itemRootScss;
+                return _itemRootScss;
             }
         }
     }

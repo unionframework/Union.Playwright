@@ -1,5 +1,6 @@
 using Microsoft.Playwright;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Union.Playwright.Components;
 using Union.Playwright.Pages.Interfaces;
 using Union.Playwright.Routing;
@@ -54,8 +55,9 @@ namespace Union.Playwright.Pages
             WebPageBuilder.InitPage(this);
         }
 
-        public virtual void WaitLoaded()
+        public virtual Task WaitLoadedAsync()
         {
+            return Task.CompletedTask;
         }
 
         public void RegisterComponent(IComponent component)

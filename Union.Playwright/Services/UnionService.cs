@@ -13,10 +13,10 @@ namespace Union.Playwright.Services
         public IServiceContextsPool ServiceContextsPool => _serviceContextsPool;
 
         private IBrowserState _state;
-        public IBrowserState State => _state??(_state=new BrowserState(this));
+        public IBrowserState State => _state ??= new BrowserState(this);
 
         private IBrowserGo _go;
-        public IBrowserGo Go => _go??(_go=new BrowserGo(this, State, _serviceContextsPool));
+        public IBrowserGo Go => _go ??= new BrowserGo(this, State, _serviceContextsPool);
 
         public UnionService(IServiceContextsPool serviceContextsPool)
         {
@@ -34,17 +34,17 @@ namespace Union.Playwright.Services
 
         public string Host => BaseUri.Authority;
 
-        public BaseUrlPattern BaseUrlPattern
+        private BaseUrlPattern _baseUrlPattern;
+        public BaseUrlPattern BaseUrlPattern => _baseUrlPattern ??= BuildBaseUrlPattern();
+
+        private BaseUrlPattern BuildBaseUrlPattern()
         {
-            get
+            var urlRegexBuilder = new BaseUrlRegexBuilder(Host);
+            if (!string.IsNullOrWhiteSpace(AbsolutePath))
             {
-                var urlRegexBuilder = new BaseUrlRegexBuilder(Host);
-                if (!string.IsNullOrWhiteSpace(AbsolutePath))
-                {
-                    urlRegexBuilder.SetAbsolutePathPattern(AbsolutePath.Replace("/", "\\/"));
-                }
-                return new BaseUrlPattern(urlRegexBuilder.Build());
+                urlRegexBuilder.SetAbsolutePathPattern(AbsolutePath.Replace("/", "\\/"));
             }
+            return new BaseUrlPattern(urlRegexBuilder.Build());
         }
 
         private BaseUrlInfo DefaultBaseUrlInfo => new BaseUrlInfo(Host, AbsolutePath);

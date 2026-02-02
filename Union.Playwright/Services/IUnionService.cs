@@ -4,17 +4,11 @@ using Union.Playwright.Routing;
 
 namespace Union.Playwright.Services
 {
-    public interface IUnionService
+    public interface IUnionService : IPageResolver, INavigationService
     {
         string BaseUrl { get; }
 
-        public BaseUrlPattern BaseUrlPattern { get; }
-
         bool HasPage(IUnionPage page);
-
-        IUnionPage GetPage(RequestData requestData, BaseUrlInfo baseUrlInfo);
-
-        RequestData GetRequestData(IUnionPage page);
 
         IServiceContextsPool ServiceContextsPool { get; }
 

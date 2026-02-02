@@ -33,12 +33,12 @@ namespace Union.Playwright.Core
                 }
                 ConfigureServices(services);
             });
-            this._testApp = builder.Build();
+            _testApp = builder.Build();
         }
 
         public ScopedTestSession CreateTestSession(Func<IPage> pageFactory)
         {
-            var scope = this._testApp.Services.CreateScope();
+            var scope = _testApp.Services.CreateScope();
             var provider = scope.ServiceProvider;
 
             var pool = provider.GetRequiredService<IServiceContextsPool>();
@@ -74,7 +74,7 @@ namespace Union.Playwright.Core
 
         public TestAwareServiceContextsPool()
         {
-            this._contexts = new ConcurrentDictionary<IUnionService, IBrowserContext>();
+            _contexts = new ConcurrentDictionary<IUnionService, IBrowserContext>();
         }
 
         /// <summary>
@@ -84,34 +84,34 @@ namespace Union.Playwright.Core
         public async Task<IBrowserContext> GetContext(IUnionService service)
         {
             // Fast path: check if context already exists
-            if (this._contexts.TryGetValue(service, out var existingContext))
+            if (_contexts.TryGetValue(service, out var existingContext))
             {
                 return existingContext;
             }
 
             // Slow path: acquire lock and create context if needed
-            await this._lock.WaitAsync();
+            await _lock.WaitAsync();
             try
             {
                 // Double-check after acquiring lock
-                if (this._contexts.TryGetValue(service, out existingContext))
+                if (_contexts.TryGetValue(service, out existingContext))
                 {
                     return existingContext;
                 }
 
-                var factory = this._pageFactory
+                var factory = _pageFactory
                     ?? throw new InvalidOperationException(
                         "No page factory has been configured. " +
                         "Call SetPageFactory() before requesting a context.");
                 var page = factory();
                 var context = page.Context;
 
-                this._contexts[service] = context;
+                _contexts[service] = context;
                 return context;
             }
             finally
             {
-                this._lock.Release();
+                _lock.Release();
             }
         }
 
@@ -121,13 +121,13 @@ namespace Union.Playwright.Core
         /// </summary>
         public void SetPageFactory(Func<IPage> pageFactory)
         {
-            this._pageFactory = pageFactory;
+            _pageFactory = pageFactory;
         }
 
         public void Dispose()
         {
-            this._contexts.Clear();
-            this._lock.Dispose();
+            _contexts.Clear();
+            _lock.Dispose();
         }
     }
 }

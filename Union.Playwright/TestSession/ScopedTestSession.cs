@@ -11,9 +11,9 @@ namespace Union.Playwright.TestSession
         public ScopedTestSession(ITestSession session, IServiceScope scope)
         {
             this.Session = session;
-            this._scope = scope;
+            _scope = scope;
         }
 
-        public void Dispose() => this._scope.Dispose();
+        public void Dispose() => _scope.Dispose();
     }
 }

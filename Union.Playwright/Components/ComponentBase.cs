@@ -18,10 +18,10 @@ namespace Union.Playwright.Components
         protected ComponentBase(IUnionPage parentPage, string rootScss = null)
         {
             this.ParentPage = parentPage;
-            this._rootScss = rootScss;
+            _rootScss = rootScss;
         }
 
-        public virtual string RootScss => this._rootScss ?? "html";
+        public virtual string RootScss => _rootScss ?? "html";
 
         protected IPage PlaywrightPage => this.ParentPage.PlaywrightPage;
 

@@ -9,11 +9,11 @@ namespace Union.Playwright.Tests.Integration.StackOverflow
 
         public StackOverflowTestSession(StackOverflowService soService)
         {
-            this._soService = soService;
+            _soService = soService;
         }
 
-        public List<IUnionService> GetServices() => new() { this._soService };
+        public List<IUnionService> GetServices() => new() { _soService };
 
-        public StackOverflowService SO => this._soService;
+        public StackOverflowService SO => _soService;
     }
 }

@@ -5,18 +5,19 @@ namespace Union.Playwright.Services
     public class BaseUrlPattern
     {
         private readonly string _regexPattern;
+        private readonly Regex _regex;
 
         public BaseUrlPattern(string regexPattern)
         {
             _regexPattern = regexPattern;
+            _regex = new Regex(regexPattern, RegexOptions.Compiled);
         }
 
         public int Length => _regexPattern.Length;
 
         public BaseUrlMatchResult Match(string url)
         {
-            var regex = new Regex(_regexPattern);
-            var match = regex.Match(url);
+            var match = _regex.Match(url);
             if (!match.Success)
             {
                 return BaseUrlMatchResult.Unmatched();

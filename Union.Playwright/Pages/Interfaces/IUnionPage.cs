@@ -1,5 +1,6 @@
 ﻿using Microsoft.Playwright;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Union.Playwright.Routing;
 
 namespace Union.Playwright.Pages.Interfaces
@@ -24,7 +25,7 @@ namespace Union.Playwright.Pages.Interfaces
 
         List<IOverlay> Overlays { get; }
 
-        void WaitLoaded();
+        Task WaitLoadedAsync();
 
         RequestData GetRequest(BaseUrlInfo defaultBaseUrlInfo);
 

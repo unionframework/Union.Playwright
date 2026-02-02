@@ -21,11 +21,11 @@ public class FakeTestSession : ITestSession
 
     public FakeTestSession(IEnumerable<IUnionService> services)
     {
-        this._services = services;
+        _services = services;
     }
 
     public List<IUnionService> GetServices()
     {
-        return this._services.ToList();
+        return _services.ToList();
     }
 }
