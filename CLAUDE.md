@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Union.Playwright is a .NET 9.0 testing framework built on top of Microsoft Playwright and NUnit. It provides a Page Object Model abstraction with URL-based routing, enabling type-safe navigation and automatic page matching based on URL patterns.
+Union.Playwright.NUnit is a .NET 9.0 testing framework built on top of Microsoft Playwright and NUnit. It provides a Page Object Model abstraction with URL-based routing, enabling type-safe navigation and automatic page matching based on URL patterns.
 
 ## Build and Test Commands
 
@@ -71,14 +71,6 @@ pwsh bin/Debug/net9.0/playwright.ps1 install
 **UnionInit** attribute (`Attributes/UnionInit.cs`): Marks fields for automatic initialization
 **WebPageBuilder** (`Pages/WebPageBuilder.cs`): Component factory (implementation incomplete)
 
-## Code Standards
-
-This project follows the patterns defined in `dotnet-backend-code-standards.md`:
-- SOLID principles with interface segregation
-- Constructor injection for dependencies
-- `this.` prefix for private fields
-- Async methods suffixed with `Async`
-- Guard clauses for early returns
 
 ## Intended Usage Pattern
 
