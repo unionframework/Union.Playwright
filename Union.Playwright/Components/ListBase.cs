@@ -63,8 +63,7 @@ namespace Union.Playwright.Components
                 return null;
             }
 
-            var random = new Random();
-            var id = ids[random.Next(ids.Count)];
+            var id = ids[Random.Shared.Next(ids.Count)];
             return this.CreateItem(id);
         }
 

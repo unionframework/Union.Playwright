@@ -38,7 +38,14 @@ namespace Union.Playwright.Pages
 
         protected UnionPage()
         {
-            Params = new Dictionary<string, string>();
+            this.Params = new Dictionary<string, string>();
+            this.Data = new Dictionary<string, string>();
+            this.Cookies = new List<Cookie>();
+            this.ProgressBars = new List<ILoader>();
+            this.Alerts = new List<IModalWindow>();
+            this.ModalWindows = new List<IModalWindow>();
+            this.Loaders = new List<ILoader>();
+            this.Overlays = new List<IOverlay>();
         }
 
         public void Activate(IPage page)

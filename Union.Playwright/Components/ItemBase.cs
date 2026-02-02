@@ -6,11 +6,14 @@ namespace Union.Playwright.Components
     {
         private string _itemRootScss;
 
+        protected IContainer Container { get; }
+
         public string Id { get; }
 
         protected ItemBase(IContainer container, string id)
             : base(container.ParentPage)
         {
+            this.Container = container;
             this.Id = id;
         }
 
